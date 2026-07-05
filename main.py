@@ -4,6 +4,9 @@ import re
 import io
 import arabic_reshaper
 from bidi.algorithm import get_display
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 def fix_reversed_arabic(text):
     if not text:
@@ -19,6 +22,14 @@ def fix_reversed_arabic(text):
     return " - ".join(parts)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 pattern = re.compile(
