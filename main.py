@@ -2,6 +2,18 @@ from fastapi import FastAPI, File, UploadFile
 import pdfplumber
 import re
 import io
+import arabic_reshaper
+from bidi.algorithm import get_display
+
+def fix_arabic(text):
+    if not text:
+        return text
+
+    # إصلاح تشكيل الحروف
+    reshaped = arabic_reshaper.reshape(text)
+
+    # إصلاح اتجاه العربية
+    return get_display(reshaped)
 
 app = FastAPI()
 
@@ -32,7 +44,7 @@ async def upload(file: UploadFile = File(...)):
             m = pattern.match(line)
             if m:
                 items.append({
-                    "name": fix_reversed_arabic(m.group(3)),
+                    "name": fix_arabic(m.group(3)),
                     "price": float(m.group(2).replace(",", "")),
                     "totalPrice": float(m.group(1).replace(",", "")),
                     "code": m.group(4),
