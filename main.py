@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
 import pdfplumber
 import re
+import io
 
 app = FastAPI()
 
@@ -15,24 +16,37 @@ pattern = re.compile(
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
-    content = await file.read()
+    try:
+        content = await file.read()
 
-    with pdfplumber.open(io.BytesIO(content)) as pdf:
-        text = "\n".join([p.extract_text() or "" for p in pdf.pages])
+        pdf_file = io.BytesIO(content)
 
-    lines = text.split("\n")
+        with pdfplumber.open(pdf_file) as pdf:
+            text = "\n".join([p.extract_text() or "" for p in pdf.pages])
 
-    items = []
+        lines = text.split("\n")
 
-    for line in lines:
-        m = pattern.match(line)
-        if m:
-            items.append({
-                "name": fix_reversed_arabic(m.group(3)),
-                "price": float(m.group(2).replace(",", "")),
-                "totalPrice": float(m.group(1).replace(",", "")),
-                "code": m.group(4),
-                "quantity": 1
-            })
+        items = []
 
-    return {"count": len(items), "data": items}
+        for line in lines:
+            m = pattern.match(line)
+            if m:
+                items.append({
+                    "name": fix_reversed_arabic(m.group(3)),
+                    "price": float(m.group(2).replace(",", "")),
+                    "totalPrice": float(m.group(1).replace(",", "")),
+                    "code": m.group(4),
+                    "quantity": 1
+                })
+
+        return {
+            "success": True,
+            "count": len(items),
+            "data": items
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
