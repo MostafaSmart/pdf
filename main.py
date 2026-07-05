@@ -5,22 +5,21 @@ import io
 import arabic_reshaper
 from bidi.algorithm import get_display
 
-def fix_arabic(text):
-    if not text:
-        return text
-
-    # إصلاح تشكيل الحروف
-    reshaped = arabic_reshaper.reshape(text)
-
-    # إصلاح اتجاه العربية
-    return get_display(reshaped)
-
-app = FastAPI()
-
 def fix_reversed_arabic(text):
     if not text:
         return text
-    return " - ".join([p.strip()[::-1] for p in text[::-1].split(" - ")])
+
+    # عكس الجملة كاملة أولاً
+    text = text[::-1]
+
+    # عكس الكلمات داخل الجملة
+    parts = text.split(" - ")
+    parts = [p.strip() for p in parts]
+
+    return " - ".join(parts)
+
+app = FastAPI()
+
 
 pattern = re.compile(
     r'^([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+1\s+\S+\s+(.*?)\s*\*?\s*([0-9\-]+)$'
@@ -43,8 +42,9 @@ async def upload(file: UploadFile = File(...)):
         for line in lines:
             m = pattern.match(line)
             if m:
+                name = fix_reversed_arabic(m.group(3).strip()) 
                 items.append({
-                    "name": fix_arabic(m.group(3)),
+                    "name": name,
                     "price": float(m.group(2).replace(",", "")),
                     "totalPrice": float(m.group(1).replace(",", "")),
                     "code": m.group(4),
